@@ -1,0 +1,44 @@
+images:
+  demoApp:
+    repository: cloud-ops-demo
+    tag: latest
+    pullPolicy: IfNotPresent
+  anomalyDetector:
+    repository: cloud-ops-detector
+    tag: latest
+    pullPolicy: IfNotPresent
+
+environment: k3s
+
+demoApp:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+anomalyDetector:
+  prometheusUrl: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+  lookbackHours: 24
+  queryStepSeconds: 60
+  evaluationIntervalSeconds: 60
+  retrainIntervalSeconds: 21600
+  minimumSamples: 60
+  contamination: "0.03"
+  rollingWindow: 5
+  storageSize: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+

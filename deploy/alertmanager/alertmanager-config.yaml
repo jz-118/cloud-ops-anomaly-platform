@@ -1,0 +1,44 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: cloud-ops-email
+  namespace: cloud-ops
+  labels:
+    alertmanagerConfig: cloud-ops
+spec:
+  route:
+    receiver: email
+    groupBy: [alertname, environment, service]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+    routes:
+      - receiver: email
+        matchers:
+          - name: severity
+            value: critical
+            matchType: "="
+        repeatInterval: 1h
+  inhibitRules:
+    - sourceMatch:
+        - name: severity
+          value: critical
+          matchType: "="
+      targetMatch:
+        - name: severity
+          value: warning
+          matchType: "="
+      equal: [environment, service]
+  receivers:
+    - name: email
+      emailConfigs:
+        - to: REPLACE_SMTP_TO
+          from: REPLACE_SMTP_FROM
+          smarthost: REPLACE_SMTP_SMARTHOST
+          authUsername: REPLACE_SMTP_USERNAME
+          authPassword:
+            name: cloud-ops-smtp
+            key: password
+          requireTLS: true
+          sendResolved: true
+

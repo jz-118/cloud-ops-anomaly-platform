@@ -1,0 +1,10 @@
+targets:
+  - name: demo-api-k3s
+    environment: k3s
+    service: demo-api
+    queries:
+      request_rate: sum(rate(demo_http_requests_total{environment="k3s",service="demo-api"}[5m]))
+      error_rate: sum(rate(demo_http_requests_total{environment="k3s",service="demo-api",status=~"5.."}[5m])) / clamp_min(sum(rate(demo_http_requests_total{environment="k3s",service="demo-api"}[5m])), 0.001)
+      p95_latency: histogram_quantile(0.95, sum by (le) (rate(demo_http_request_duration_seconds_bucket{environment="k3s",service="demo-api"}[5m])))
+      in_progress: sum(demo_http_requests_in_progress{environment="k3s",service="demo-api"})
+

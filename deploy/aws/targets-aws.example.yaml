@@ -1,0 +1,9 @@
+targets:
+  - name: ec2-aggregate-aws
+    environment: aws
+    service: ec2
+    queries:
+      cpu_average: avg(aws_ec2_cpu_utilization_average)
+      network_in: sum(rate(aws_ec2_network_in_sum[5m]))
+      network_out: sum(rate(aws_ec2_network_out_sum[5m]))
+

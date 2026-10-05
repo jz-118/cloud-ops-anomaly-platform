@@ -1,0 +1,7 @@
+apiVersion: v2
+name: cloud-ops-platform
+description: Demo workload and anomaly detector for the hybrid cloud monitoring project
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+

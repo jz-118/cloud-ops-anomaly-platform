@@ -1,0 +1,21 @@
+apiVersion: v1alpha1
+sts-region: ap-southeast-1
+discovery:
+  jobs:
+    - type: AWS/EC2
+      regions:
+        - ap-southeast-1
+      period: 300
+      length: 300
+      delay: 300
+      metrics:
+        - name: CPUUtilization
+          statistics: [Average, Maximum]
+        - name: NetworkIn
+          statistics: [Sum]
+        - name: NetworkOut
+          statistics: [Sum]
+      dimensionNameRequirements:
+        - InstanceId
+      addCloudwatchTimestamp: true
+

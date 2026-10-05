@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-ops-demo-app
+  labels:
+    {{- include "cloud-ops.labels" . | nindent 4 }}
+    app.kubernetes.io/name: cloud-ops-demo-app
+spec:
+  replicas: {{ .Values.demoApp.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloud-ops-demo-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloud-ops-demo-app
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: demo-app
+          image: "{{ .Values.images.demoApp.repository }}:{{ .Values.images.demoApp.tag }}"
+          imagePullPolicy: {{ .Values.images.demoApp.pullPolicy }}
+          env:
+            - name: ENVIRONMENT
+              value: {{ .Values.environment | quote }}
+            - name: SERVICE_NAME
+              value: demo-api
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {{- toYaml .Values.demoApp.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-ops-demo-app
+  labels:
+    {{- include "cloud-ops.labels" . | nindent 4 }}
+    app.kubernetes.io/name: cloud-ops-demo-app
+spec:
+  selector:
+    app.kubernetes.io/name: cloud-ops-demo-app
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+

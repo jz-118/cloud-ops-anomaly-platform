@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-ops-overview-dashboard
+  namespace: cloud-ops
+  labels:
+    grafana_dashboard: "1"
+data:
+  cloud-ops-overview.json: |-
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "graphTooltip": 1,
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Healthy scrape targets",
+          "id": 1,
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+          "targets": [{"expr": "sum(up)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "red"}, {"color": "green", "value": 1}]}}}
+        },
+        {
+          "type": "stat",
+          "title": "Active alerts",
+          "id": 2,
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+          "targets": [{"expr": "sum(ALERTS{alertstate=\"firing\"})", "refId": "A"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "red", "value": 1}]}}}
+        },
+        {
+          "type": "stat",
+          "title": "Anomaly model ready",
+          "id": 3,
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+          "targets": [{"expr": "min(ops_anomaly_model_ready)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"mappings": [{"options": {"0": {"text": "NOT READY"}, "1": {"text": "READY"}}, "type": "value"}], "thresholds": {"mode": "absolute", "steps": [{"color": "red"}, {"color": "green", "value": 1}]}}}
+        },
+        {
+          "type": "stat",
+          "title": "Demo request rate",
+          "id": 4,
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+          "targets": [{"expr": "sum(rate(demo_http_requests_total[5m]))", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "reqps"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "Anomaly score",
+          "id": 5,
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+          "targets": [{"expr": "ops_anomaly_score", "legendFormat": "{{target}} / {{environment}}", "refId": "A"}],
+          "fieldConfig": {"defaults": {"min": 0, "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "orange", "value": 0.8}]}}}
+        },
+        {
+          "type": "timeseries",
+          "title": "P95 latency",
+          "id": 6,
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+          "targets": [{"expr": "histogram_quantile(0.95, sum by (le, environment) (rate(demo_http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{environment}}", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "s"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "Request and error rate",
+          "id": 7,
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+          "targets": [
+            {"expr": "sum by (environment) (rate(demo_http_requests_total[5m]))", "legendFormat": "requests {{environment}}", "refId": "A"},
+            {"expr": "sum by (environment) (rate(demo_http_requests_total{status=~\"5..\"}[5m]))", "legendFormat": "errors {{environment}}", "refId": "B"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "reqps"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "Node CPU utilization",
+          "id": 8,
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "targets": [{"expr": "100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))", "legendFormat": "{{instance}}", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}}
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["cloud-ops", "anomaly-detection"],
+      "templating": {"list": []},
+      "time": {"from": "now-6h", "to": "now"},
+      "timezone": "browser",
+      "title": "Cloud Ops / Hybrid Environment Overview",
+      "uid": "cloud-ops-overview",
+      "version": 1
+    }
+

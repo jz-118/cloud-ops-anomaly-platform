@@ -1,0 +1,15 @@
+.venv/
+.test-deps/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+*.log
+models/*.joblib
+models/*.json
+terraform/**/.terraform/
+terraform/**/*.tfstate*
+terraform/**/*.tfvars
+!terraform/**/*.tfvars.example

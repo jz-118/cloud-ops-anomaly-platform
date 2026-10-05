@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-ops-anomaly-targets
+  labels:
+    {{- include "cloud-ops.labels" . | nindent 4 }}
+data:
+  targets.yaml: |
+{{ .Files.Get "files/targets.yaml" | indent 4 }}
+

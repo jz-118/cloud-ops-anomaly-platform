@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: pytest anomaly-detector/tests demo-app/tests
+
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build demo application
+        run: docker build -t cloud-ops-demo:test demo-app
+      - name: Build anomaly detector
+        run: docker build -t cloud-ops-detector:test anomaly-detector
+
+  deployment-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4.2.0
+        with:
+          version: v3.16.4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - name: Validate Helm chart
+        run: |
+          helm lint deploy/helm/cloud-ops-platform
+          helm template cloud-ops deploy/helm/cloud-ops-platform --namespace cloud-ops >/dev/null
+      - name: Validate Terraform
+        working-directory: terraform/aws
+        run: |
+          terraform fmt -check -diff
+          terraform init -backend=false
+          terraform validate
+

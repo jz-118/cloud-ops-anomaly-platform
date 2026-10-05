@@ -1,0 +1,51 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cloud-ops-alerts
+  labels:
+    release: kube-prometheus-stack
+    {{- include "cloud-ops.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: cloud-ops.availability
+      rules:
+        - alert: CloudOpsTargetDown
+          expr: up{namespace="{{ .Release.Namespace }}"} == 0
+          for: 3m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Monitoring target is unavailable"
+            description: "{{`{{ $labels.job }}`}} / {{`{{ $labels.instance }}`}} has been unreachable for 3 minutes."
+        - alert: CloudOpsDemoHighErrorRate
+          expr: |
+            sum by (environment, service) (rate(demo_http_requests_total{service="demo-api",status=~"5.."}[5m]))
+            /
+            clamp_min(sum by (environment, service) (rate(demo_http_requests_total{service="demo-api"}[5m])), 0.001) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Demo API error rate is high"
+            description: "The demo API error rate has exceeded 5% for 5 minutes."
+    - name: cloud-ops.anomaly
+      rules:
+        - alert: CloudOpsMultivariateAnomaly
+          expr: |
+            ops_anomaly_score{model="isolation_forest"} > 0.80
+            and on(target, environment, service)
+            ops_anomaly_model_ready == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Multivariate anomaly detected for {{`{{ $labels.service }}`}}"
+            description: "{{`{{ $labels.target }}`}} has remained outside its learned baseline for 5 minutes (score={{`{{ $value }}`}})."
+        - alert: CloudOpsAnomalyDetectorStale
+          expr: time() - ops_anomaly_last_evaluation_timestamp_seconds > 300
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Anomaly detector evaluation is stale"
+            description: "No successful anomaly evaluation has completed for {{`{{ $labels.target }}`}} in more than 5 minutes."

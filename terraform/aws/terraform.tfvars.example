@@ -1,0 +1,5 @@
+aws_region      = "ap-southeast-1"
+instance_type   = "t3.micro"
+monitoring_cidr = "203.0.113.10/32"
+name            = "cloud-ops-lab"
+

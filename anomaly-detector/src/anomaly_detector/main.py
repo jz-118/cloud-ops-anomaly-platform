@@ -26,6 +26,10 @@ from .prometheus import PrometheusClient
 LOGGER = logging.getLogger(__name__)
 
 
+class InsufficientSamplesError(RuntimeError):
+    """The target has not collected enough history for model evaluation."""
+
+
 class DetectorService:
     def __init__(self, settings: Settings, targets: list[TargetConfig]) -> None:
         self.settings = settings
@@ -64,7 +68,7 @@ class DetectorService:
             required_samples = self.settings.minimum_samples + 1
             if len(frame) < required_samples:
                 MODEL_READY.labels(*labels).set(0)
-                raise RuntimeError(
+                raise InsufficientSamplesError(
                     f"target {target.name} has {len(frame)} usable samples; "
                     f"minimum is {required_samples} ({self.settings.minimum_samples} training plus one inference sample)"
                 )
@@ -96,6 +100,8 @@ class DetectorService:
             for target in self.targets:
                 try:
                     self.evaluate(target)
+                except InsufficientSamplesError as error:
+                    LOGGER.warning("%s", error)
                 except Exception:
                     EVALUATION_FAILURES.labels(*self._labels(target)).inc()
                     LOGGER.exception("Evaluation failed for %s", target.name)

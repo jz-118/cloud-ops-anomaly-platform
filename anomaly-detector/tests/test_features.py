@@ -30,3 +30,15 @@ def test_build_feature_frame_handles_infinite_values():
     frame = build_feature_frame({"value": values}, rolling_window=2)
 
     assert np.isfinite(frame.to_numpy()).all()
+
+
+def test_build_feature_frame_returns_empty_for_empty_prometheus_results():
+    frame = build_feature_frame(
+        {
+            "request_rate": pd.Series(dtype="float64"),
+            "latency": pd.Series(dtype="float64"),
+        },
+        rolling_window=5,
+    )
+
+    assert frame.empty

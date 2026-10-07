@@ -9,6 +9,11 @@ def build_feature_frame(series_by_name: dict[str, pd.Series], rolling_window: in
         return pd.DataFrame()
 
     base = pd.concat(series_by_name, axis=1).sort_index()
+    if base.empty:
+        return pd.DataFrame()
+    if not isinstance(base.index, pd.DatetimeIndex):
+        raise ValueError("feature series must use a DatetimeIndex")
+
     base = base.replace([np.inf, -np.inf], np.nan).interpolate(limit_direction="both").ffill().bfill()
     features: dict[str, pd.Series] = {}
     for name in base.columns:

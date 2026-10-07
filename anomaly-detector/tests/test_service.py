@@ -5,11 +5,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from prometheus_client import generate_latest
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from anomaly_detector.config import Settings, TargetConfig
-from anomaly_detector.main import DetectorService
+from anomaly_detector.main import DetectorService, InsufficientSamplesError
 
 
 class FakePrometheusClient:
@@ -54,4 +55,35 @@ def test_service_trains_persists_and_scores_target(tmp_path):
     assert service.last_trained[target.name].tzinfo is timezone.utc
     metrics = generate_latest().decode("utf-8")
     assert 'ops_anomaly_score{environment="test",model="isolation_forest",service="demo-api"' in metrics
+
+
+def test_service_treats_empty_prometheus_history_as_cold_start(tmp_path):
+    settings = Settings(
+        prometheus_url="http://prometheus.invalid",
+        config_path=tmp_path / "targets.yaml",
+        model_dir=tmp_path / "models",
+        lookback_hours=1,
+        query_step_seconds=60,
+        evaluation_interval_seconds=60,
+        retrain_interval_seconds=21600,
+        minimum_samples=10,
+        contamination=0.03,
+        rolling_window=5,
+        listen_port=8080,
+    )
+    target = TargetConfig(
+        name="empty-target",
+        environment="test",
+        service="demo-api",
+        queries={"latency": "empty_query"},
+    )
+    service = DetectorService(settings, [target])
+    service.client = type(
+        "EmptyClient",
+        (),
+        {"query_range": lambda self, *args, **kwargs: pd.Series(dtype="float64")},
+    )()
+
+    with pytest.raises(InsufficientSamplesError, match="0 usable samples"):
+        service.evaluate(target)
 
